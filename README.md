@@ -16,3 +16,13 @@ Prebuilt kernel for `device/mode1/md07p`, taken from the stock firmware
 (`android12-5.10`). The vendor modules are MediaTek's.
 
 Used by the device tree via `KERNEL_PATH := device/mode1/md07p-kernel`.
+
+## Changes from stock
+
+- `modules/leds-mtk.ko`: one instruction patched to remove the backlight floor. Stock
+  `mtk_set_brightness` maps levels 1-34 to 35 and caps levels at 191 (of 255). That makes the
+  bottom of the brightness slider do nothing and keeps the screen fairly bright at minimum. The
+  `cmp w8, #0x22` at `.text+0xd98` (file offset `0x1d98`, `1f 89 00 71`) is changed to
+  `cmp w8, #0x0` (`1f 01 00 71`) so the floor check never matches. Level 0 still turns the
+  backlight off, and the 191 cap is kept. The kernel has no module signing
+  (`CONFIG_MODULE_SIG` unset).
