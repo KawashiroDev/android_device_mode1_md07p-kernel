@@ -19,10 +19,15 @@ Used by the device tree via `KERNEL_PATH := device/mode1/md07p-kernel`.
 
 ## Changes from stock
 
-- `modules/leds-mtk.ko`: one instruction patched to remove the backlight floor. Stock
-  `mtk_set_brightness` maps levels 1-34 to 35 and caps levels at 191 (of 255). That makes the
-  bottom of the brightness slider do nothing and keeps the screen fairly bright at minimum. The
-  `cmp w8, #0x22` at `.text+0xd98` (file offset `0x1d98`, `1f 89 00 71`) is changed to
-  `cmp w8, #0x0` (`1f 01 00 71`) so the floor check never matches. Level 0 still turns the
-  backlight off, and the 191 cap is kept. The kernel has no module signing
-  (`CONFIG_MODULE_SIG` unset).
+- `modules/leds-mtk.ko`: two instructions patched to remove the backlight floor and cap. Stock
+  `mtk_set_brightness` maps levels 1-34 to 35 and caps levels at 191 (of 255, i.e. hw 1533 of
+  2047). The floor makes the bottom of the brightness slider do nothing and keeps the screen
+  fairly bright at minimum:
+  - floor: `cmp w8, #0x22` at `.text+0xd98` (file offset `0x1d98`, `1f 89 00 71`) is changed to
+    `cmp w8, #0x0` (`1f 01 00 71`) so the floor check never matches. Level 0 still turns the
+    backlight off.
+  - cap: `csel w23, w8, w10, lo` at `.text+0xda8` (file offset `0x1da8`, `17 31 8a 1a`) is
+    changed to `mov w23, w8` (`f7 03 08 2a`). The device tree's lights HAL applies the stock
+    191 cap instead, unless Settings > Display > Brightness boost is on.
+
+  The kernel has no module signing (`CONFIG_MODULE_SIG` unset).
